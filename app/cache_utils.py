@@ -1,46 +1,36 @@
-from aiocache import Cache, caches
-from aiocache.serializers import JsonSerializer
+from aiocache import caches, Cache
+from aiocache.backends.memory import SimpleMemoryCache # Import the actual class
+from aiocache.serializers import JsonSerializer # Import the actual class
 
-# Configure a simple in-memory cache as default
-# For production, consider 'aiocache.MemcachedCache' or 'aiocache.RedisCache'
-# if you have memcached or redis available.
-# Default TTL can be set here, or per @cached decorator.
+# Configure caches using direct class references and serializer instances
 caches.set_config({
     'default': {
-        'cache': "aiocache.SimpleMemoryCache",
-        'serializer': {
-            'class': "aiocache.serializers.JsonSerializer"
-        }
+        'cache': SimpleMemoryCache, # Pass the class directly
+        'serializer': JsonSerializer(), # Pass an instance of the serializer
+        'namespace': "main" # Add a namespace for easier clearing if needed
     },
-    # Example for a longer TTL cache if needed for specific items
     'long_ttl': {
-        'cache': "aiocache.SimpleMemoryCache",
+        'cache': SimpleMemoryCache, # Pass the class directly
         'ttl': 3600 * 24, # 24 hours
-        'serializer': {
-            'class': "aiocache.serializers.JsonSerializer"
-        }
+        'serializer': JsonSerializer(), # Pass an instance
+        'namespace': "long"
     }
 })
 
-# You can export specific cache instances if you want to use different configurations easily
-default_cache = caches.get('default')
-long_ttl_cache = caches.get('long_ttl')
+# Make specific cache instances available if needed, or just rely on aliases.
+# These calls also ensure the configuration is processed.
+default_cache_instance = caches.get('default')
+long_ttl_cache_instance = caches.get('long_ttl')
 
-# Or just use the @cached decorator with cache='default' or cache='long_ttl'
-# Example of how to use the decorator in other files:
-# from .cache_utils import default_cache
-# from aiocache import cached
-#
-# @cached(ttl=60, cache=default_cache, key_builder=lambda f, *args, **kwargs: f"{f.__name__}_{args}_{kwargs}")
-# async def my_function(param1, param2):
-# pass
-#
-# The key_builder is important to make keys unique based on function name and arguments.
-# A default key_builder is provided by aiocache if you don't specify one,
-# but it's good practice to be explicit for clarity and control.
-
+# Custom key builder (remains the same)
 def default_key_builder(func, *args, **kwargs):
-    # Creates a cache key based on function module, name, args, and sorted kwargs
-    # Similar to aiocache's default key builder but ensures kwargs order doesn't break cache.
     ordered_kwargs = tuple(sorted(kwargs.items()))
     return f"{func.__module__}.{func.__name__}:{args!r}:{ordered_kwargs!r}"
+
+# Ensure cache_utils is imported early in app/main.py or before pubg_api.py
+# by other modules if this configuration needs to be globally available before
+# any @cached decorator is processed.
+# For now, app/pubg_api.py imports default_key_builder from here,
+# so this file will be processed when pubg_api.py is imported.
+# The critical part is that SimpleMemoryCache and JsonSerializer are resolved
+# class objects when set_config is called.
