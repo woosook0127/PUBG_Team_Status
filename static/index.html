@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PUBG Player Stats Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN -->
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PUBG Player Stats Dashboard</h1>
+        </header>
+        <main>
+            <div class="input-form">
+                <h2>Search Player Stats</h2>
+                <div class="form-group">
+                    <label for="playerName">Player Name:</label>
+                    <input type="text" id="playerName" name="playerName" placeholder="e.g., TGLTN">
+                </div>
+                <div class="form-group">
+                    <label for="platform">Platform:</label>
+                    <select id="platform" name="platform">
+                        <option value="steam">Steam</option>
+                        <option value="kakao">Kakao</option>
+                        <option value="psn">PSN</option>
+                        <option value="xbox">Xbox</option>
+                        <!-- Add other platforms as supported by your backend -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="seasonId">Season ID:</label>
+                    <input type="text" id="seasonId" name="seasonId" placeholder="e.g., division.bro.official.pc-2018-01">
+                    <small>Example: division.bro.official.steam-2023-08 (Check API for current season IDs)</small>
+                </div>
+                <button id="getStatsBtn">Get Stats</button>
+            </div>
+
+            <div id="resultsArea">
+                <h2>Results</h2>
+                <div id="loadingIndicator" style="display: none;">Loading...</div>
+                <div id="statsOutput">
+                    <!-- Individual Weapon Stats will be displayed here -->
+                </div>
+                <div id="errorDisplay" class="error-message" style="display: none;">
+                    <!-- Errors will be shown here -->
+                </div>
+            </div>
+
+            <div id="teamPerformanceSection" style="display: none;">
+                <h2>Team Performance Comparison</h2>
+                <div id="teamIdentificationMessage" class="info-message" style="display: none;">
+                    <!-- Team identification method message -->
+                </div>
+                <div id="teamChartsContainer">
+                    <!-- Radar charts will be appended here -->
+                </div>
+                <div id="teamErrorDisplay" class="error-message" style="display: none;">
+                    <!-- Team performance specific errors -->
+                </div>
+            </div>
+
+            <div id="overallTeamStatsSection" style="display: none;">
+                <h2>Overall Team Stats (When Full Team Plays Together)</h2>
+                <div id="overallTeamStatsMessage" class="info-message" style="display: none;">
+                    <!-- Message about overall team stats, e.g., number of matches analyzed -->
+                </div>
+                <div id="overallTeamStatsOutput">
+                    <!-- Overall team stats will be displayed here -->
+                </div>
+                <div id="overallTeamErrorDisplay" class="error-message" style="display: none;">
+                    <!-- Overall team stats specific errors -->
+                </div>
+            </div>
+        </main>
+        <footer>
+            <p>&copy; 2024 PUBG Stats Dashboard</p>
+        </footer>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
