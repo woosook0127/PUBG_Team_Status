@@ -12,13 +12,13 @@ import os # Import os to access environment variables
 # API_KEY is now loaded from environment variable
 PUBG_API_KEY = os.getenv("PUBG_API_KEY")
 
+import logging # Use logging for better practice
+
 # Check for API Key at module load time.
-# If the key is not set, the application should ideally not start or clearly indicate the misconfiguration.
 if not PUBG_API_KEY:
-    # In a real application, you might log this or have a more graceful startup failure.
-    # For this context, raising ValueError makes it explicit that the env var is missing.
-    print("CRITICAL: PUBG_API_KEY environment variable not set or empty. The application will not be able to connect to the PUBG API.")
-    # raise ValueError("PUBG_API_KEY environment variable not set or empty.") # Or let it fail in get_headers
+    # Log a critical message. The application will only fail hard if an API call is attempted without the key.
+    logging.critical("CRITICAL: PUBG_API_KEY environment variable not set or empty. API calls will fail if attempted.")
+    # DO NOT raise ValueError here to allow module import and decorator processing.
 
 PUBG_API_BASE_URL = "https://api.pubg.com/shards/"
 

@@ -322,31 +322,67 @@ async def test_cache_key_uniqueness(mock_httpx_client):
 
 @pytest.mark.asyncio
 async def test_api_key_not_configured():
-    # Temporarily patch API_KEY to None for this test
-    with patch('app.pubg_api.API_KEY', None):
+    # Temporarily patch the module-level PUBG_API_KEY variable to None for this test
+    # This simulates the scenario where os.getenv("PUBG_API_KEY") returned None at module load.
+    with patch('app.pubg_api.PUBG_API_KEY', None):
         with pytest.raises(UnauthorizedErrorAPI) as excinfo:
             await pubg_api.get_player_id(SAMPLE_PLAYER_NAME, SAMPLE_PLATFORM)
-        assert "API Key is not configured" in str(excinfo.value)
+        assert "PUBG API Key is not configured" in str(excinfo.value) # Check for the specific message
+
+@pytest.mark.asyncio
+async def test_module_import_and_logging_with_missing_api_key(monkeypatch, caplog, mock_httpx_client):
+    """
+    Tests that the module imports successfully even if PUBG_API_KEY is not set,
+    that a critical log message is emitted, and that API calls fail correctly.
+    """
+    # 1. Ensure the environment variable is not set
+    monkeypatch.delenv("PUBG_API_KEY", raising=False)
+
+    # 2. Reload the pubg_api module to trigger its module-level code again
+    import importlib
+    importlib.reload(pubg_api) # This re-runs the os.getenv("PUBG_API_KEY") and the check
+
+    # 3. Check that the module-level PUBG_API_KEY is now None
+    assert pubg_api.PUBG_API_KEY is None, "Module-level PUBG_API_KEY should be None after reload with unset env var"
+
+    # 4. Check for the critical log message
+    assert "CRITICAL: PUBG_API_KEY environment variable not set or empty. API calls will fail if attempted." in caplog.text
+    # Ensure it's logged at CRITICAL level
+    assert any(record.levelno == logging.CRITICAL for record in caplog.records)
+
+    # 5. Verify that an attempt to make an API call now fails with UnauthorizedErrorAPI
+    # The mock_httpx_client is needed because _make_request will be called up to the point of get_headers()
+    with pytest.raises(UnauthorizedErrorAPI, match="PUBG API Key is not configured"):
+        await pubg_api.get_player_id(SAMPLE_PLAYER_NAME, SAMPLE_PLATFORM)
+    
+    # 6. Restore the API_KEY for other tests if necessary (though pytest isolation should handle this)
+    # For safety, if other tests might rely on a globally patched os.environ, reset it.
+    # However, monkeypatch usually handles cleanup.
+    # If API_KEY was set in the test environment for other tests, it might need to be restored.
+    # This depends on how the overall test session environment is configured.
+    # For now, assume monkeypatch cleans up its own changes to os.environ.
+    # To be absolutely sure for subsequent tests in the same session (if any were to run in a way that
+    # bypasses pytest's usual isolation or if pubg_api is not reloaded again), we could reset it:
+    original_key = "dummy_key_for_testing_restore" # A placeholder, actual key isn't used by mocks
+    monkeypatch.setenv("PUBG_API_KEY", original_key)
+    importlib.reload(pubg_api)
+    assert pubg_api.PUBG_API_KEY == original_key
+
 
 # Add more tests for other functions (get_player_seasonal_stats, get_player_weapon_summaries, etc.)
 # following the same patterns: success, various errors, caching.
-# For brevity in this example, I've covered the main patterns.I've created the initial structure and a comprehensive set of tests for `app/pubg_api.py` in `tests/test_pubg_api.py`.
+# For brevity in this example, I've covered the main patterns.
 
-**Summary of `tests/test_pubg_api.py`:**
-*   **Fixtures:**
-    *   `clear_cache_before_each_test`: Automatically clears the `aiocache` default cache before each test run to ensure test isolation.
-    *   `mock_httpx_client`: Mocks `httpx.AsyncClient` to simulate API responses without making actual network calls. It patches `httpx.AsyncClient` globally for the duration of a test.
-*   **Test Structure:** For each function in `pubg_api.py` (though only `get_player_id`, `get_player_seasonal_stats`, `get_player_weapon_summaries`, `get_player_match_history_ids`, `get_match_details`, and `get_player_clan_details` are fully implemented with multiple scenarios in this initial pass for brevity):
-    *   **Success Case:** Tests that the function returns the expected data when the mocked API call is successful (200 OK). It also asserts that the correct URL and headers were used for the API call.
-    *   **Error Cases:** Tests that the correct custom exceptions (e.g., `PlayerNotFoundAPIError`, `RateLimitErrorAPI`, `UnauthorizedErrorAPI`, `ForbiddenErrorAPI`, `ExternalAPIServiceError`) are raised when the mocked API returns corresponding HTTP error status codes (404, 429, 401, 403, 500). It also tests for `httpx.RequestError` being wrapped in `ExternalAPIServiceError`.
-    *   Specific logic for `get_player_match_history_ids` parsing and `get_player_clan_details` two-step logic is tested.
-*   **Caching Tests:**
-    *   `test_get_player_id_caching`: Verifies that when a cached function is called multiple times with the same arguments, the underlying (mocked) API call is only made once. A call with different arguments triggers a new API call.
-    *   `test_get_match_history_ids_cache_short_ttl`: Conceptually acknowledges the short TTL for this function and tests basic caching behavior. True TTL expiry testing is noted as complex without time manipulation tools.
-    *   `test_cache_key_uniqueness`: Ensures that different functions or calls with different arguments use distinct cache entries.
-*   **API Key Configuration Test:**
-    *   `test_api_key_not_configured`: Specifically tests that an `UnauthorizedErrorAPI` is raised if `API_KEY` is `None` when `get_headers()` is called.
-
-This suite covers various scenarios including successful data retrieval, different types of API errors, network issues, and the basic functionality of the caching mechanism. More tests can be added for the remaining functions in `pubg_api.py` following these established patterns.
-
-Next, I'll implement tests for **`tests/test_team_analyzer.py`**. This is more complex due to the logic involved. I'll use the `MockPubgApi` class pattern similar to the one in `app/team_analyzer.py` itself for its internal test, but adapt it for pytest.
+# Summary of `tests/test_pubg_api.py` after changes:
+# *   `test_api_key_not_configured`: Now correctly patches `app.pubg_api.PUBG_API_KEY` (the actual module-level variable)
+#     to `None` and asserts that `UnauthorizedErrorAPI` is raised with the specific message from `get_headers()`.
+# *   `test_module_import_and_logging_with_missing_api_key`: New test added.
+#     *   Uses `monkeypatch.delenv` to remove `PUBG_API_KEY` from environment.
+#     *   Uses `importlib.reload(pubg_api)` to force re-evaluation of the module-level code in `pubg_api`.
+#     *   Asserts that `pubg_api.PUBG_API_KEY` becomes `None` after this reload.
+#     *   Uses `caplog` fixture to capture log messages and asserts that the critical warning about the missing API key is logged.
+#     *   Finally, asserts that an attempt to call an API function (`get_player_id`) raises `UnauthorizedErrorAPI`.
+#     *   Includes a step to restore `PUBG_API_KEY` in the environment using `monkeypatch.setenv` and reloads `pubg_api` again
+#       to ensure a clean state for subsequent tests, preventing side effects.
+# *   Other tests remain largely the same, as they test API call logic assuming a key *is* configured (or the mock bypasses the key check part).
+# *   The overall test suite now more accurately reflects the deferred failure mechanism for the API key.
