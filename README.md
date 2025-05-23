@@ -88,15 +88,75 @@ A FastAPI web application that provides player statistics, team identification, 
 
 ### Running Locally
 
-Once the setup is complete, you can run the FastAPI application using Uvicorn:
+Once the general setup (cloning, API key in `.env`) is complete, you can run the FastAPI application using Uvicorn. Below are instructions for a standard Python virtual environment and a Conda environment on Linux.
 
+**Using a Standard Python Virtual Environment (venv):**
+
+This is covered by the steps above (creating `venv`, activating, `pip install`). To run the server:
 ```bash
+# Ensure your venv is activated: source venv/bin/activate
+# Ensure PUBG_API_KEY is set in your .env file or exported in your shell
 uvicorn app.main:app --reload
 ```
-
 The application will typically be available at `http://127.0.0.1:8000`.
-You can access the UI at `http://127.0.0.1:8000/ui/index.html`.
-API documentation (Swagger UI) will be at `http://127.0.0.1:8000/docs`.
+
+**Using a Linux with Conda Environment:**
+
+These instructions are for running the server on a Linux machine using a Conda environment.
+
+1.  **Create and Activate Conda Environment:**
+    *   Create a new Conda environment (e.g., named `pubg_stats_env`) with Python 3.10 (or your preferred compatible version):
+        ```bash
+        conda create -n pubg_stats_env python=3.10 -y
+        ```
+    *   Activate the newly created environment:
+        ```bash
+        conda activate pubg_stats_env
+        ```
+
+2.  **Install Dependencies:**
+    *   Navigate to the project root directory (where `requirements.txt` is located).
+    *   Install the required packages using pip within your Conda environment:
+        ```bash
+        pip install -r requirements.txt
+        ```
+
+3.  **Set API Key Environment Variable:**
+    *   The application requires the `PUBG_API_KEY` to be set. You can do this in several ways on Linux:
+        *   **For the current session:**
+            ```bash
+            export PUBG_API_KEY="your_actual_api_key"
+            ```
+            Replace `"your_actual_api_key"` with your key. You'll need to do this every time you open a new terminal session.
+        *   **For persistence across sessions (recommended):** Add the export line to your shell's configuration file (e.g., `~/.bashrc` if you use bash, or `~/.zshrc` if you use zsh).
+            ```bash
+            echo 'export PUBG_API_KEY="your_actual_api_key"' >> ~/.bashrc 
+            # For zsh, use ~/.zshrc
+            source ~/.bashrc # Or source ~/.zshrc, or open a new terminal
+            ```
+        *   **Using a `.env` file (if you prefer Uvicorn to pick it up via a helper or if you run a script):** While the application directly uses `os.getenv()`, if you place your `PUBG_API_KEY` in a `.env` file in the project root (as described in the general setup), some Uvicorn launch methods or helper scripts might load it. However, `export` or shell profile is more standard for Conda environments unless `python-dotenv` is explicitly used in the run script.
+
+4.  **Run the Uvicorn Server:**
+    *   From the project root directory (inside your activated Conda environment, with the API key exported or available), run Uvicorn:
+        ```bash
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+        ```
+        *   `--host 0.0.0.0`: This makes the server accessible from other devices on your local network.
+        *   `--port 8000`: Specifies the port.
+        *   `--reload`: Enables auto-reload for development. Remove this for production deployments.
+
+### Accessing the Application
+
+*   **From the machine running the server:**
+    *   UI: `http://localhost:8000/ui/index.html` or `http://127.0.0.1:8000/ui/index.html`
+    *   API Docs (Swagger): `http://localhost:8000/docs` or `http://127.0.0.1:8000/docs`
+
+*   **From another machine (e.g., Windows) on the same local network:**
+    *   If the server was started with `--host 0.0.0.0` (as in the Conda/Docker examples), you can access the UI from another device.
+    *   Find the local IP address of the Linux machine running the server. You can usually find this by running `ip addr show` or `hostname -I` in the Linux terminal.
+    *   On your Windows machine (or other device), open a web browser and go to:
+        `http://<LINUX_MACHINE_IP_ADDRESS>:8000/ui/index.html`
+        (Replace `<LINUX_MACHINE_IP_ADDRESS>` with the actual IP, e.g., `http://192.168.1.105:8000/ui/index.html`).
 
 ## Deployment with Docker
 
