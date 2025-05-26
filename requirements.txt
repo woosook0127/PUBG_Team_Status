@@ -1,7 +1,2 @@
-fastapi
-uvicorn[standard]
-httpx
-aiolimiter
-aiocache
-pytest
-pytest-asyncio
+Flask
+requests
