@@ -1,0 +1,251 @@
+/* PUBG Stats Viewer - style.css */
+
+/* --- Global Theme & Variables --- */
+:root {
+    --pubg-yellow: #F9B500; /* A common PUBG yellow */
+    --pubg-dark-bg: #1C1C1C; /* Dark background */
+    --pubg-light-text: #EAEAEA;
+    --pubg-grey-text: #A0A0A0;
+    --pubg-border-color: #333333;
+    --pubg-section-bg: #282828;
+    --pubg-error-red: #E53935;
+    --pubg-success-green: #7CB342; /* For potential success messages */
+}
+
+body.pubg-theme {
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--pubg-dark-bg);
+    color: var(--pubg-light-text);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: var(--pubg-section-bg);
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
+
+header {
+    background-color: var(--pubg-dark-bg); /* Or a slightly different dark shade */
+    color: var(--pubg-yellow);
+    padding: 1rem 0;
+    text-align: center;
+    border-bottom: 3px solid var(--pubg-yellow);
+    margin-bottom: 20px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2.5em;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+h2, h3 {
+    color: var(--pubg-yellow);
+    border-bottom: 1px solid var(--pubg-border-color);
+    padding-bottom: 10px;
+    margin-top: 30px; /* Space before section headers */
+}
+
+h2 { font-size: 1.8em; }
+h3 { font-size: 1.5em; }
+
+/* --- Search Section --- */
+#search-section {
+    padding: 20px;
+    margin-bottom: 20px;
+    background-color: var(--pubg-section-bg); /* Sections can have slightly different bg if needed */
+    border-radius: 5px;
+}
+
+.search-controls {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 15px; /* Space between input elements */
+    align-items: center;
+}
+
+#playerNameInput, #seasonSelect {
+    padding: 12px;
+    border: 1px solid var(--pubg-border-color);
+    background-color: #333; /* Darker input background */
+    color: var(--pubg-light-text);
+    border-radius: 4px;
+    font-size: 1em;
+    flex-grow: 1; /* Allow inputs to grow */
+}
+
+#playerNameInput::placeholder {
+    color: var(--pubg-grey-text);
+}
+
+#searchButton {
+    padding: 12px 20px;
+    background-color: var(--pubg-yellow);
+    color: var(--pubg-dark-bg); /* Dark text on yellow button */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+#searchButton:hover {
+    background-color: #FFD700; /* Lighter yellow on hover */
+}
+
+/* --- Loading & Error Display --- */
+#loadingIndicator {
+    text-align: center;
+    padding: 20px;
+    font-size: 1.2em;
+    color: var(--pubg-yellow);
+    border: 1px dashed var(--pubg-border-color);
+    margin: 20px 0;
+    border-radius: 5px;
+}
+
+#errorDisplay {
+    text-align: center;
+    padding: 15px;
+    margin: 20px 0;
+    background-color: rgba(229, 57, 53, 0.1); /* Light red background */
+    color: var(--pubg-error-red);
+    border: 1px solid var(--pubg-error-red);
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+#initialMessage {
+    text-align: center;
+    padding: 30px;
+    font-size: 1.2em;
+    color: var(--pubg-grey-text);
+    border: 1px solid var(--pubg-border-color);
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+
+/* --- Results Area --- */
+#resultsArea {
+    margin-top: 20px;
+}
+
+#player-info-section h2 {
+    text-align: center;
+    font-size: 2em;
+    margin-bottom: 30px;
+}
+
+section { /* General styling for content sections */
+    margin-bottom: 30px;
+    padding: 15px;
+    background-color: #222; /* Slightly lighter than main bg for sections */
+    border-radius: 5px;
+}
+
+/* --- Chart Canvas Elements --- */
+.chart-container {
+    width: 100%;
+    max-width: 600px; /* Max width for radar charts for better appearance */
+    margin: 20px auto; /* Center charts */
+    padding: 10px;
+    background-color: var(--pubg-section-bg); /* Background for the chart area */
+    border-radius: 5px;
+}
+
+canvas { /* Applicable to all chart canvases */
+    display: block;
+    width: 100% !important; /* Chart.js responsiveness */
+    height: auto !important; /* Chart.js responsiveness */
+}
+
+/* --- Weapon Stats Display --- */
+#weaponStatsDisplay {
+    padding: 15px;
+    border: 1px solid var(--pubg-border-color);
+    border-radius: 4px;
+    min-height: 50px; /* Ensure it's visible with placeholder text */
+}
+#weaponStatsDisplay p {
+    color: var(--pubg-grey-text);
+}
+/* More specific weapon stats styling will be needed later */
+
+/* --- Teammates Display --- */
+#teammatesDisplay {
+    padding: 15px;
+}
+#teammatesDisplay .teammate-synergy-card {
+    background-color: var(--pubg-section-bg);
+    border: 1px solid var(--pubg-border-color);
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+#teammatesDisplay .teammate-synergy-card h4 { /* Teammate name */
+    color: var(--pubg-yellow);
+    margin-top: 0;
+}
+#teammatesDisplay p {
+    color: var(--pubg-grey-text);
+}
+
+
+/* --- Match Logs Display --- */
+#matchLogsDisplay {
+    padding: 15px;
+    border: 1px solid var(--pubg-border-color);
+    border-radius: 4px;
+    min-height: 50px;
+}
+#matchLogsDisplay ul {
+    list-style-type: none;
+    padding: 0;
+}
+#matchLogsDisplay li {
+    background-color: var(--pubg-section-bg);
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 3px;
+    border-left: 3px solid var(--pubg-yellow);
+}
+#matchLogsDisplay p {
+    color: var(--pubg-grey-text);
+}
+
+/* --- Footer --- */
+footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 30px;
+    font-size: 0.9em;
+    color: var(--pubg-grey-text);
+    border-top: 1px solid var(--pubg-border-color);
+}
+
+/* --- Responsive Adjustments (Basic) --- */
+@media (max-width: 768px) {
+    .search-controls {
+        flex-direction: column;
+    }
+    #playerNameInput, #seasonSelect, #searchButton {
+        width: 100%; /* Full width on smaller screens */
+    }
+    header h1 {
+        font-size: 2em;
+    }
+    .container {
+        width: 95%;
+        padding: 10px;
+    }
+}

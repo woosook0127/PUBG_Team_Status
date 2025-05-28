@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PUBG Stats Viewer (Kakao)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="pubg-theme">
+    <header>
+        <h1>PUBG Stats Viewer (Kakao)</h1>
+    </header>
+
+    <div class="container">
+        <section id="search-section">
+            <h2>Player Search</h2>
+            <div class="search-controls">
+                <input type="text" id="playerNameInput" placeholder="Enter PUBG Player Name (Kakao)">
+                <select id="seasonSelect">
+                    <option value="">Loading Seasons...</option>
+                    <!-- Seasons will be populated by JavaScript -->
+                </select>
+                <button id="searchButton">Search</button>
+            </div>
+        </section>
+
+        <div id="loadingIndicator" style="display: none;">
+            <p>Loading player data...</p>
+            <!-- You can add a spinner animation here later -->
+        </div>
+
+        <div id="errorDisplay" style="display: none;">
+            <!-- Error messages will be shown here -->
+        </div>
+
+        <div id="resultsArea" style="display: none;">
+            <section id="player-info-section">
+                <h2 id="playerNameDisplay">Player Name</h2>
+            </section>
+
+            <section id="individual-stats-section">
+                <h3>Individual Stats (Season Overview)</h3>
+                <div class="chart-container">
+                    <canvas id="individualStatsChart"></canvas>
+                </div>
+            </section>
+
+            <section id="weapon-stats-section">
+                <h3>Top Weapon Stats (Season Sample - Placeholder)</h3>
+                <div id="weaponStatsDisplay">
+                    <p>Weapon statistics will be displayed here. (Currently placeholder data)</p>
+                </div>
+            </section>
+
+            <section id="teammates-section">
+                <h3>Frequent Teammates (Season)</h3>
+                <div id="teammatesDisplay">
+                    <!-- Teammate data and charts will be populated here -->
+                    <p>Frequent teammate data will appear here.</p>
+                </div>
+            </section>
+
+            <section id="match-logs-section">
+                <h3>Match Logs (Recent from Season)</h3>
+                <div id="matchLogsDisplay">
+                    <!-- Match logs will be populated here -->
+                    <p>Recent match logs will appear here.</p>
+                </div>
+            </section>
+        </div>
+        <div id="initialMessage">
+             <p>Enter a player name and select a season to view stats.</p>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>&copy; 2024 PUBG Stats Viewer - Not affiliated with PUBG Corp. or KRAFTON, Inc.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
