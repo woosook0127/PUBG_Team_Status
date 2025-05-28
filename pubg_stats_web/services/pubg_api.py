@@ -93,11 +93,11 @@ class PubgAPI:
             logging.warning(f"No seasons data found or unexpected response. Data: {data}")
             return []
 
-    def get_player_season_stats(self, account_id: str, season_id: str, game_mode_filter: str = None) -> dict | None:
+    def get_player_season_stats(self, account_id: str, season_id: str) -> dict | None:
         """
         Fetches player statistics for a specific season.
         Endpoint: GET /players/{accountId}/seasons/{seasonId}
-        Can be filtered by game mode using the game_mode_filter parameter.
+        This method fetches data for all game modes played by the player in the season.
         Returns the 'data' object from the JSON:API response, which includes attributes and relationships.
         """
         if not account_id or not season_id:
@@ -105,12 +105,7 @@ class PubgAPI:
             return None
 
         endpoint = f"players/{account_id}/seasons/{season_id}"
-        api_params = None
-        if game_mode_filter: # Checks for None or empty string implicitly
-            api_params = {'filter[gameMode]': game_mode_filter}
-            logging.info(f"Applying game mode filter: {game_mode_filter}")
-            
-        data, error = self._request(endpoint, params=api_params)
+        data, error = self._request(endpoint)
 
         if error:
             logging.error(f"Error getting player season stats for account {account_id}, season {season_id}: {error}")
@@ -130,7 +125,10 @@ class PubgAPI:
         Strategy 1: Attempts to extract match IDs from the player season stats response.
         """
         logging.info(f"Attempting to get player matches for account {account_id}, season {season_id} using Strategy 1.")
-        
+        # Pass the game_mode_filter if it exists. 
+        # For this subtask, we are reverting get_player_season_stats, so it won't have game_mode_filter.
+        # However, if get_player_matches was intended to use a filter, it would need to be passed here.
+        # For now, assuming get_player_season_stats (reverted) is called without filter.
         player_season_data = self.get_player_season_stats(account_id, season_id)
 
         if player_season_data:

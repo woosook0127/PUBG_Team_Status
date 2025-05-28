@@ -7,26 +7,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- Service and Helper Imports ---
-try:
-    from services.pubg_api import PubgAPI
-    from utils.helpers import (
-        calculate_individual_player_stats,
-        identify_frequent_teammates,
-        calculate_teammate_synergy_stats,
-        calculate_individual_weapon_stats
-        # format_player_stats_for_display, # Not directly used in API routes, but good to have if needed later
-        # prepare_chart_data # Not directly used in API routes
-    )
-except ImportError as e:
-    logging.error(f"Error importing modules: {e}. Ensure services and utils are in PYTHONPATH.")
-    # Exit or raise if critical modules are missing, for now, we'll let Flask fail if they are truly gone.
-    PubgAPI = None # Will cause errors later if not resolved, good for debugging path issues
-    # Define placeholders if needed for Flask to start, though routes will fail
-    calculate_individual_player_stats = lambda x: {}
-    identify_frequent_teammates = lambda a,b,c,d=5: {}
-    calculate_teammate_synergy_stats = lambda a,b,c: {}
-    calculate_individual_weapon_stats = lambda a,b,c: {}
-
+# Use absolute imports assuming 'pubg_stats_web' is in PYTHONPATH
+from pubg_stats_web.services.pubg_api import PubgAPI
+from pubg_stats_web.utils.helpers import (
+    calculate_individual_player_stats,
+    identify_frequent_teammates,
+    calculate_teammate_synergy_stats,
+    calculate_individual_weapon_stats
+    # format_player_stats_for_display and prepare_chart_data were commented out,
+    # so they are not included in the direct imports here unless they are uncommented in helpers.py
+    # and actually used. For now, only importing what was actively imported in the try block.
+)
 
 app = Flask(__name__)
 
@@ -118,44 +109,75 @@ def get_player_stats_route():
             return jsonify({"error": f"Player '{player_name}' not found or an API error occurred."}), 404
         app.logger.info(f"Player ID for {player_name}: {account_id}")
 
-        # Construct game_mode_filter
+        # Construct game_mode_string_for_selection
         # Assuming "squad" is the team size for now.
-        # Default to "ranked-squad" (Ranked TPP Squad) if parameters are missing,
-        # aligning with user's default preference.
         if game_type == "ranked":
             if perspective == "fpp":
-                game_mode_filter = "ranked-squad-fpp"
+                game_mode_string_for_selection = "ranked-squad-fpp"
             else: # Default to tpp for ranked
-                game_mode_filter = "ranked-squad"
-        else: # game_type is "normal" or something else (default to normal logic)
+                game_mode_string_for_selection = "ranked-squad"
+        else: # game_type is "normal"
             if perspective == "fpp":
-                game_mode_filter = "squad-fpp"
+                game_mode_string_for_selection = "squad-fpp"
             else: # Default to tpp for normal
-                game_mode_filter = "squad"
+                game_mode_string_for_selection = "squad"
         
-        app.logger.info(f"Constructed game mode filter: {game_mode_filter} (gameType: {game_type}, perspective: {perspective})")
+        app.logger.info(f"Targeting game mode for stats extraction: {game_mode_string_for_selection} (gameType: {game_type}, perspective: {perspective})")
 
-        # 2. Fetch Player Season Stats (Overall, now with game mode filter)
-        player_season_data = pubg_api_service.get_player_season_stats(
-            account_id, 
-            season_id, 
-            game_mode_filter=game_mode_filter
-        )
+        # 2. Fetch Full Player Season Stats (all game modes)
+        player_season_data = pubg_api_service.get_player_season_stats(account_id, season_id)
+        
         if player_season_data is None:
-            # PubgAPI.get_player_season_stats logs specific errors
-            app.logger.error(f"Could not fetch season stats for account {account_id}, season {season_id}, filter {game_mode_filter}.")
-            return jsonify({"error": "Could not fetch season stats for this player. The account may be invalid or there's no data for the selected season/game mode."}), 404 # Or 500 if server-side API issue
-        app.logger.info(f"Fetched season stats for {account_id} with filter {game_mode_filter}")
+            app.logger.error(f"Could not fetch overall season stats for account {account_id}, season {season_id}.")
+            return jsonify({"error": "Could not fetch season stats for this player. The account may be invalid or no data exists for the selected season."}), 404
         
-        # 3. Calculate Individual Stats
-        individual_stats = calculate_individual_player_stats(player_season_data)
-        app.logger.info(f"Calculated individual stats: {individual_stats is not None}")
+        app.logger.info(f"Fetched overall season stats for {account_id}, season {season_id}. Now selecting specific mode.")
 
-        # 4. Identify Frequent Teammates
+        # Extract specific game mode data
+        all_game_mode_stats = player_season_data.get('attributes', {}).get('gameModeStats', {})
+        specific_mode_stats_data = all_game_mode_stats.get(game_mode_string_for_selection)
+
+        if specific_mode_stats_data is None:
+            app.logger.warning(f"Game mode '{game_mode_string_for_selection}' not found in player's season stats for account {account_id}.")
+            # Log available modes for debugging
+            available_modes = list(all_game_mode_stats.keys())
+            app.logger.info(f"Available game modes for account {account_id}, season {season_id}: {available_modes}")
+            return jsonify({"error": f"Stats for game mode '{game_mode_string_for_selection}' not found for this player in the selected season. Available modes: {', '.join(available_modes) if available_modes else 'None'}"}), 404
+        
+        app.logger.info(f"Successfully extracted stats for game mode: {game_mode_string_for_selection}")
+
+        # 3. Calculate Individual Stats using only the selected game mode's data
+        # Prepare the data structure expected by calculate_individual_player_stats
+        single_mode_player_season_data = {
+            "attributes": {
+                "gameModeStats": {
+                    game_mode_string_for_selection: specific_mode_stats_data
+                }
+                # If other top-level attributes from player_season_data are needed by helpers,
+                # they should be copied here. For calculate_individual_player_stats,
+                # only gameModeStats is directly used.
+            },
+            # Copy other top-level keys from player_season_data if they might be relevant elsewhere
+            # For example, 'type', 'id', 'relationships' (though relationships might need filtering too)
+            "type": player_season_data.get("type"),
+            "id": player_season_data.get("id") 
+            # Note: relationships are not passed here to keep it simple for individual stats.
+            # If identify_frequent_teammates or get_player_matches relies on relationships from this
+            # specific player_season_data, this will need adjustment or they need to use the original player_season_data.
+        }
+        
+        individual_stats = calculate_individual_player_stats(single_mode_player_season_data)
+        app.logger.info(f"Calculated individual stats for mode {game_mode_string_for_selection}: {individual_stats is not None}")
+
+        # 4. Identify Frequent Teammates (uses full season data, not single_mode_player_season_data for matches)
+        # This part should probably still use the original player_season_data if it relies on 'matches' relationship
+        # or call get_player_matches which itself calls get_player_season_stats.
+        # For now, assuming identify_frequent_teammates makes its own API calls or get_player_matches is sufficient.
         frequent_teammates_data = identify_frequent_teammates(pubg_api_service, account_id, season_id)
-        app.logger.info(f"Identified {len(frequent_teammates_data)} frequent teammates.")
+        app.logger.info(f"Identified {len(frequent_teammates_data)} frequent teammates (based on overall season activity).")
 
         # 5. Calculate Synergy Stats for Teammates
+        # This also relies on matches, likely from overall season activity.
         processed_teammates = []
         if frequent_teammates_data:
             for tm_account_id, tm_data in frequent_teammates_data.items():
@@ -174,9 +196,10 @@ def get_player_stats_route():
 
         # 6. Calculate Weapon Stats (Placeholder)
         # PubgAPI.get_player_matches returns a list of match_ids or an empty list on error/no data.
+        # This will use the reverted get_player_season_stats, so it gets all matches.
         season_match_ids_for_weapons = pubg_api_service.get_player_matches(account_id, season_id)
         if not season_match_ids_for_weapons: # Check if list is empty
-             app.logger.warning(f"No match IDs found for player {account_id}, season {season_id} by get_player_matches. Weapon stats might be empty or based on no matches.")
+             app.logger.warning(f"No match IDs found for player {account_id}, season {season_id} by get_player_matches (overall season). Weapon stats might be empty.")
         
         weapon_stats = calculate_individual_weapon_stats(
             pubg_api_service, 

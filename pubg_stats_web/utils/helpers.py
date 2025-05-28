@@ -10,13 +10,8 @@ import requests # Needed for calculate_individual_weapon_stats if fetching telem
 # │   │   └── pubg_api.py (contains PubgAPI class)
 # │   └── utils/
 # │       └── helpers.py (this file)
-try:
-    from ..services.pubg_api import PubgAPI
-except ImportError:
-    logging.warning("Could not perform relative import of PubgAPI. Attempting direct import (may fail in package context).")
-    # This fallback is primarily for direct script testing if the utils module is run standalone.
-    # In the Flask app context, the relative import should work.
-    from services.pubg_api import PubgAPI
+# Use absolute import assuming 'pubg_stats_web' is in PYTHONPATH
+from pubg_stats_web.services.pubg_api import PubgAPI
 
 
 # Configure basic logging if not already configured by the main app
