@@ -136,6 +136,10 @@ def calculate_individual_player_stats(player_season_data: dict) -> dict | None:
         logging.warning("calculate_individual_player_stats: gameModeStats is empty.")
         return None
 
+    logging.info(f"Calculating individual player stats from {len(game_mode_stats)} game mode(s) found in season data.")
+    if len(game_mode_stats) == 1:
+        logging.info(f"Processing stats for single game mode: {list(game_mode_stats.keys())[0]}")
+
     # Prioritize modes: squad-fpp, squad, solo-fpp, solo, duo-fpp, duo
     # For simplicity, we will sum relevant stats and average others across all available modes.
     # A more sophisticated approach might weigh them or pick specific modes.

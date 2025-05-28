@@ -8,6 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsArea = document.getElementById('resultsArea');
     const initialMessage = document.getElementById('initialMessage');
 
+    // New select elements for game type and perspective
+    const gameTypeSelect = document.getElementById('gameTypeSelect');
+    const perspectiveSelect = document.getElementById('perspectiveSelect');
+
     // Results display elements
     const playerNameDisplay = document.getElementById('playerNameDisplay');
     const individualStatsChartCanvas = document.getElementById('individualStatsChart');
@@ -66,6 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleSearch() {
         const playerName = playerNameInput.value.trim();
         const seasonId = seasonSelect.value;
+        const gameType = gameTypeSelect.value; // Get game type value
+        const perspective = perspectiveSelect.value; // Get perspective value
 
         if (!playerName) {
             showError("Please enter a player name.");
@@ -76,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        console.log(`Searching for player: ${playerName}, season: ${seasonId}`);
+        console.log(`Searching for player: ${playerName}, season: ${seasonId}, gameType: ${gameType}, perspective: ${perspective}`);
         showLoading(true);
         hideError();
         resultsArea.style.display = 'none'; // Hide previous results
@@ -86,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // TODO: The backend for this endpoint will be created in Step 6.
             // This fetch will likely fail until then, or return placeholder data if you set one up.
-            const response = await fetch(`/api/player_stats?playerName=${encodeURIComponent(playerName)}&seasonId=${encodeURIComponent(seasonId)}`);
+            const response = await fetch(`/api/player_stats?playerName=${encodeURIComponent(playerName)}&seasonId=${encodeURIComponent(seasonId)}&gameType=${encodeURIComponent(gameType)}&perspective=${encodeURIComponent(perspective)}`);
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Server returned an error. Please check console for details.' }));
@@ -223,11 +229,45 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Normalize data for radar chart (0-100 scale is often good)
-        // This is a placeholder normalization - specific logic depends on expected data ranges.
-        // For now, we assume values are somewhat comparable or Chart.js will scale them.
-        // A more robust solution would involve knowing max possible values for each stat.
-        const normalizedValues = dataValues.map(val => Math.max(0, val)); // Ensure no negative values for radar
+        // Normalize data for radar chart (0-100 scale)
+        const maxValues = {
+            'Damage/Match': 800,        // Individual stats
+            'Kills/Match': 10,          // Individual stats
+            'Assists/Match': 10,        // Individual stats
+            'Avg Survival (s)': 2000,   // Both charts (assuming label consistency or use separate as needed)
+            'Rank Score (0-100)': 100,  // Individual stats (already 0-100)
+            'Avg Dmg/Match': 800,       // Teammate stats
+            'Avg Kills/Match': 10,      // Teammate stats
+            'Avg Assists/Match': 10,    // Teammate stats
+            'Avg Team Rank': 30         // Teammate stats (e.g., 1-30, where 1 is best)
+        };
+
+        const normalizedValues = dataValues.map((value, index) => {
+            const label = dataLabels[index];
+            let normalized = 0;
+
+            if (label === 'Rank Score (0-100)') { // Individual Player Rank Score
+                normalized = Math.max(0, Math.min(value, maxValues[label] || 100));
+            } else if (label === 'Avg Team Rank') { // Teammate Rank (lower is better)
+                const maxRank = maxValues[label] || 30; // Max possible rank like 30th, 50th, etc.
+                // Ensure value is within [1, maxRank] before normalization
+                const clampedRank = Math.max(1, Math.min(value, maxRank));
+                // Invert: rank 1 -> 100, rank maxRank -> 0
+                normalized = Math.max(0, ((maxRank - clampedRank) / (maxRank - 1)) * 100);
+                 if (maxRank === 1) normalized = 100; // Edge case: if max rank is 1, it's always 100
+            } else {
+                const maxValue = maxValues[label];
+                if (maxValue) {
+                    normalized = Math.max(0, (Math.min(value, maxValue) / maxValue) * 100);
+                } else {
+                    // Fallback for any label not explicitly defined (should be avoided by defining all)
+                    // This might happen if a new stat is added without updating maxValues
+                    console.warn(`Max value for '${label}' not defined. Using raw value capped at 0-100.`);
+                    normalized = Math.max(0, Math.min(value, 100)); 
+                }
+            }
+            return normalized;
+        });
 
         const data = {
             labels: dataLabels,
@@ -271,14 +311,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         },
                         ticks: {
                             color: 'rgba(234, 234, 234, 0.8)', // Numbers on the scale
-                            backdropColor: 'rgba(0,0,0,0.5)', // Background for ticks for readability
                             font: {
                                 size: 10
                             },
-                            // SuggestedMin and suggestedMax can help scale, but dynamic data is tricky.
-                            // Chart.js usually does a good job auto-scaling.
-                            // Forcing a 0-100 scale might be an option if all data is normalized.
-                            // For now, let Chart.js auto-scale.
+                            min: 0, // Enforce 0-100 scale
+                            max: 100,
+                            stepSize: 20 // Optional: define step size for ticks
                         }
                     }
                 },

@@ -95,6 +95,8 @@ def get_player_stats_route():
 
     player_name = request.args.get('playerName')
     season_id = request.args.get('seasonId')
+    game_type = request.args.get('gameType', 'ranked')  # Default to 'ranked'
+    perspective = request.args.get('perspective', 'tpp') # Default to 'tpp'
 
     if not player_name:
         app.logger.warning("Missing playerName parameter.")
@@ -116,13 +118,34 @@ def get_player_stats_route():
             return jsonify({"error": f"Player '{player_name}' not found or an API error occurred."}), 404
         app.logger.info(f"Player ID for {player_name}: {account_id}")
 
-        # 2. Fetch Player Season Stats (Overall)
-        player_season_data = pubg_api_service.get_player_season_stats(account_id, season_id)
+        # Construct game_mode_filter
+        # Assuming "squad" is the team size for now.
+        # Default to "ranked-squad" (Ranked TPP Squad) if parameters are missing,
+        # aligning with user's default preference.
+        if game_type == "ranked":
+            if perspective == "fpp":
+                game_mode_filter = "ranked-squad-fpp"
+            else: # Default to tpp for ranked
+                game_mode_filter = "ranked-squad"
+        else: # game_type is "normal" or something else (default to normal logic)
+            if perspective == "fpp":
+                game_mode_filter = "squad-fpp"
+            else: # Default to tpp for normal
+                game_mode_filter = "squad"
+        
+        app.logger.info(f"Constructed game mode filter: {game_mode_filter} (gameType: {game_type}, perspective: {perspective})")
+
+        # 2. Fetch Player Season Stats (Overall, now with game mode filter)
+        player_season_data = pubg_api_service.get_player_season_stats(
+            account_id, 
+            season_id, 
+            game_mode_filter=game_mode_filter
+        )
         if player_season_data is None:
             # PubgAPI.get_player_season_stats logs specific errors
-            app.logger.error(f"Could not fetch season stats for account {account_id}, season {season_id}.")
-            return jsonify({"error": "Could not fetch season stats for this player. The account may be invalid or there's no data for the selected season."}), 404 # Or 500 if server-side API issue
-        app.logger.info(f"Fetched season stats for {account_id}")
+            app.logger.error(f"Could not fetch season stats for account {account_id}, season {season_id}, filter {game_mode_filter}.")
+            return jsonify({"error": "Could not fetch season stats for this player. The account may be invalid or there's no data for the selected season/game mode."}), 404 # Or 500 if server-side API issue
+        app.logger.info(f"Fetched season stats for {account_id} with filter {game_mode_filter}")
         
         # 3. Calculate Individual Stats
         individual_stats = calculate_individual_player_stats(player_season_data)
