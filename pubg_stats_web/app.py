@@ -136,15 +136,27 @@ def get_player_stats_route():
         # Extract specific game mode data
         all_game_mode_stats = player_season_data.get('attributes', {}).get('gameModeStats', {})
         specific_mode_stats_data = all_game_mode_stats.get(game_mode_string_for_selection)
+        original_targeted_mode = game_mode_string_for_selection # Store for error message
+
+        if specific_mode_stats_data is None and game_type == "ranked":
+            app.logger.info(f"Ranked game mode '{game_mode_string_for_selection}' not found. Attempting fallback to normal equivalent.")
+            fallback_mode_string = game_mode_string_for_selection.replace("ranked-", "")
+            app.logger.info(f"Fallback game mode: {fallback_mode_string}")
+            specific_mode_stats_data = all_game_mode_stats.get(fallback_mode_string)
+            if specific_mode_stats_data:
+                app.logger.info(f"Successfully found stats for fallback game mode: {fallback_mode_string}")
+                game_mode_string_for_selection = fallback_mode_string # Update to reflect the mode actually used
+            else:
+                app.logger.warning(f"Fallback game mode '{fallback_mode_string}' also not found for account {account_id}.")
+                # specific_mode_stats_data remains None
 
         if specific_mode_stats_data is None:
-            app.logger.warning(f"Game mode '{game_mode_string_for_selection}' not found in player's season stats for account {account_id}.")
-            # Log available modes for debugging
+            app.logger.warning(f"Game mode '{original_targeted_mode}' (and potential fallback) not found in player's season stats for account {account_id}.")
             available_modes = list(all_game_mode_stats.keys())
             app.logger.info(f"Available game modes for account {account_id}, season {season_id}: {available_modes}")
-            return jsonify({"error": f"Stats for game mode '{game_mode_string_for_selection}' not found for this player in the selected season. Available modes: {', '.join(available_modes) if available_modes else 'None'}"}), 404
+            return jsonify({"error": f"Stats for game mode '{original_targeted_mode}' (or its fallback) not found for this player in the selected season. Available modes: {', '.join(available_modes) if available_modes else 'None'}"}), 404
         
-        app.logger.info(f"Successfully extracted stats for game mode: {game_mode_string_for_selection}")
+        app.logger.info(f"Successfully extracted stats for game mode: {game_mode_string_for_selection}") # This will log the fallback mode if used
 
         # 3. Calculate Individual Stats using only the selected game mode's data
         # Prepare the data structure expected by calculate_individual_player_stats

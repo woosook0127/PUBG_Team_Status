@@ -110,8 +110,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error("Failed to fetch player stats:", error);
-            showError(`Failed to load player stats: ${error.message}`);
-            clearAllStatsDisplay(); // Clear any stale data
+            // Removed: showError(`Failed to load player stats: ${error.message}`);
+            
+            // Update initialMessage text for this specific scenario
+            if (initialMessage) { // Check if element exists, though it should
+                initialMessage.innerHTML = '<p>No stats found for the selected player, season, or mode. Please try different criteria.</p>';
+            }
+            
+            clearAllStatsDisplay(); // Clears results, shows initialMessage
         } finally {
             showLoading(false);
         }
