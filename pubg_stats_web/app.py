@@ -210,6 +210,22 @@ def get_player_stats_route():
         # PubgAPI.get_player_matches returns a list of match_ids or an empty list on error/no data.
         # This will use the reverted get_player_season_stats, so it gets all matches.
         season_match_ids_for_weapons = pubg_api_service.get_player_matches(account_id, season_id)
+        
+        # --- ADD DEBUG LOGGING FOR FIRST MATCH ATTRIBUTES ---
+        if season_match_ids_for_weapons:
+            sample_match_id_to_debug = season_match_ids_for_weapons[0]
+            app.logger.info(f"Attempting to fetch details for DEBUG_SAMPLE_MATCH_ID: {sample_match_id_to_debug}")
+            debug_match_details = pubg_api_service.get_match_details(sample_match_id_to_debug)
+            if debug_match_details and 'data' in debug_match_details and 'attributes' in debug_match_details['data']:
+                # Convert attributes to string for logging, as it can be a large dict
+                debug_attrs_str = str(debug_match_details['data']['attributes'])
+                app.logger.info(f"DEBUG_SAMPLE_MATCH_ATTRIBUTES: {debug_attrs_str}")
+            else:
+                app.logger.info(f"Could not fetch or find attributes for DEBUG_SAMPLE_MATCH_ID: {sample_match_id_to_debug}. Details: {debug_match_details}")
+        else:
+            app.logger.info("No matches found in season_match_ids_for_weapons, skipping DEBUG_SAMPLE_MATCH logic.")
+        # --- END DEBUG LOGGING ---
+
         if not season_match_ids_for_weapons: # Check if list is empty
              app.logger.warning(f"No match IDs found for player {account_id}, season {season_id} by get_player_matches (overall season). Weapon stats might be empty.")
         
